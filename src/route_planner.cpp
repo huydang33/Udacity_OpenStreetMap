@@ -10,7 +10,8 @@ RoutePlanner::RoutePlanner(RouteModel &model, float start_x, float start_y, floa
 
     // TODO 2: Use the m_Model.FindClosestNode method to find the closest nodes to the starting and ending coordinates.
     // Store the nodes you find in the RoutePlanner's start_node and end_node attributes.
-
+    start_node = &m_Model.FindClosestNode(start_x, start_y);
+    end_node = &m_Model.FindClosestNode(end_x, end_y);
 }
 
 
@@ -20,7 +21,7 @@ RoutePlanner::RoutePlanner(RouteModel &model, float start_x, float start_y, floa
 // - Node objects have a distance method to determine the distance to another node.
 
 float RoutePlanner::CalculateHValue(RouteModel::Node const *node) {
-
+    return node->distance(*end_node);
 }
 
 
@@ -32,7 +33,17 @@ float RoutePlanner::CalculateHValue(RouteModel::Node const *node) {
 // - For each node in current_node.neighbors, add the neighbor to open_list and set the node's visited attribute to true.
 
 void RoutePlanner::AddNeighbors(RouteModel::Node *current_node) {
+    current_node->FindNeighbors();
 
+    for(RouteModel::Node * neighbor_node: current_node->neighbors)
+    {
+        neighbor_node->visited = true;
+        neighbor_node->h_value = CalculateHValue(neighbor_node);
+        neighbor_node->g_value = current_node->g_value + neighbor_node->distance(*current_node);
+        neighbor_node->parent = current_node;
+        this->open_list.push_back(neighbor_node);
+    }
+    current_node->visited = true;
 }
 
 
@@ -43,8 +54,23 @@ void RoutePlanner::AddNeighbors(RouteModel::Node *current_node) {
 // - Remove that node from the open_list.
 // - Return the pointer.
 
-RouteModel::Node *RoutePlanner::NextNode() {
+bool Compare(RouteModel::Node * a, RouteModel::Node * b)
+{
+    float sum1 = a->h_value + a->g_value;
+    float sum2 = b->h_value + b->g_value;
+    return sum1 > sum2;
+}
 
+RouteModel::Node *RoutePlanner::NextNode() {
+    // Sort the open_list according to the sum of the h value and g value
+    std::sort(this->open_list.begin(), this->open_list.end(), Compare);
+
+    // A pointer to the node in the list with the lowest sum
+    RouteModel::Node *next_node = this->open_list.back();
+    // Remove that node from the open_list
+    this->open_list.pop_back();
+    // Return the pointer
+    return next_node;
 }
 
 
@@ -62,8 +88,21 @@ std::vector<RouteModel::Node> RoutePlanner::ConstructFinalPath(RouteModel::Node 
     std::vector<RouteModel::Node> path_found;
 
     // TODO: Implement your solution here.
-
-    distance *= m_Model.MetricScale(); // Multiply the distance by the scale of the map to get meters.
+    /* Follow the chain of parents of nodes until reaching the starting node */
+    while(current_node != start_node)
+    {
+        /* Calculate the distance between the node and its parent */
+        distance += current_node->distance(*(current_node->parent));
+        path_found.push_back(*current_node);
+        current_node = current_node->parent;
+    }
+    /* Add start node to the path */
+    path_found.push_back(*current_node);
+    /* Rotate the path */
+    std::reverse(path_found.begin(), path_found.end());
+    /* Multiply the distance by the scale of the map to get meters */
+    distance *= m_Model.MetricScale(); 
+    
     return path_found;
 
 }
@@ -80,5 +119,26 @@ void RoutePlanner::AStarSearch() {
     RouteModel::Node *current_node = nullptr;
 
     // TODO: Implement your solution here.
+    start_node->visited = true;
+    start_node->parent = nullptr;
+    start_node->h_value = CalculateHValue(start_node);
+    start_node->g_value = 0;
 
+    // Add all the neighbors of the current node to the open_list
+    AddNeighbors(start_node);
+
+    while(open_list.size())
+    {
+        /* Sort the open_list() */
+        current_node = NextNode();
+        /* Add all of the neighbors of the current node to the open_list */
+        AddNeighbors(current_node);
+        /* If reach the end_node, construct the final path that was found */
+        if(current_node == end_node)
+        {
+            m_Model.path = ConstructFinalPath(current_node);
+            return;
+        }
+    }
+    return;
 }
