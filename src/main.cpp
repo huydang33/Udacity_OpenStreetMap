@@ -38,22 +38,22 @@ bool check_valid_range(float start_x, float start_y, float end_x, float end_y)
     if(!is_in_range(start_x))
     {
         std::cerr << "Invalid start_x: " << start_x << std::endl;
-      	ret |= true;
+      	ret = false;
     }
   	if(!is_in_range(start_y))
     {
         std::cerr << "Invalid start_y: " << start_y << std::endl;
-      	ret |= true;
+      	ret = false;
     }
   	if(!is_in_range(end_x))
     {
         std::cerr << "Invalid end_x: " << end_x << std::endl;
-      	ret |= true;
+      	ret = false;
     }
     if(!is_in_range(end_y))
     {
     	std::cerr << "Invalid end_y: " << end_y << std::endl;
-      	ret |= true;
+      	ret = false;
     }
   
   	return ret;
@@ -93,12 +93,9 @@ int main(int argc, const char **argv)
     float end_x = 0.0;
     float end_y = 0.0;
     std::cout << "Please enter value for start_x, start_y, end_x, end_y respectively between 0 and 100" << std::endl;
-    std::cin >> start_x;
-    std::cin >> start_y;
-    std::cin >> end_x;
-    std::cin >> end_y;
+    std::cin >> start_x >> start_y >> end_x >> end_y;
 
-    if(check_valid_range(start_x, start_y, end_x, end_y))
+    if(!check_valid_range(start_x, start_y, end_x, end_y))
     {
       return -1;
     }
